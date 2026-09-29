@@ -1,0 +1,18 @@
+# Core — rule_engine, activity_engine, api
+requests
+websockets
+python-dotenv
+pyyaml
+fastapi
+uvicorn[standard]
+
+# Rule builder (Streamlit admin tool)
+streamlit
+plotly
+pandas
+altair
+
+# Optional — only needed if a trained ML activity classifier is plugged in
+# (see activity_engine/classifier.py). Heuristics are the default and need neither.
+# scikit-learn
+# joblib

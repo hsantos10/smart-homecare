@@ -1,0 +1,252 @@
+profile_id: patient-001
+patient_name: Patient A
+caregiver_name: Caregiver A
+rules:
+- id: rule-001
+  name: Fall detected
+  enabled: true
+  category: Safety
+  severity: CRITICAL
+  trigger_type: fall
+  message: Fall detected in {{zone}} at {{time}}
+  # Binds to every HA entity bucketed as "fall". If the FP2 fall signal reaches HA
+  # under a name without "fall" in it, pin it here:  entity_id: binary_sensor.<...>
+- id: rule-002
+  name: Night exit — front door
+  enabled: true
+  category: Safety
+  severity: HIGH
+  trigger_type: door_opened
+  message: Front door opened at {{time}} — {{patient_name}} may have left
+  entity_id: binary_sensor.front_door_opening
+  no_return_minutes: 5
+  time_window:
+    start: '20:00'
+    end: 08:00
+- id: rule-003
+  name: Living room inactivity (breakfast window)
+  enabled: true
+  category: Activity
+  severity: MEDIUM
+  trigger_type: room_inactivity
+  message: No living room activity for {{duration}} min during morning hours
+  zone: Living room
+  duration_minutes: 45
+  time_window:
+    start: 07:00
+    end: '11:00'
+- id: rule-004
+  name: Long bathroom stay
+  enabled: true
+  category: Safety
+  severity: HIGH
+  trigger_type: long_stay
+  message: '{{patient_name}} has been in the bathroom for {{duration}} min'
+  zone: Bedroom Bathroom
+  duration_minutes: 20
+- id: rule-005
+  name: Night wandering
+  enabled: true
+  category: Safety
+  severity: MEDIUM
+  trigger_type: night_wandering
+  message: Movement detected at {{time}} — possible night wandering
+  time_window:
+    start: 00:00
+    end: 06:00
+- id: rule-006
+  name: Global inactivity (daytime)
+  enabled: true
+  category: Activity
+  severity: MEDIUM
+  trigger_type: global_inactivity
+  message: No movement detected anywhere for {{duration}} min
+  duration_minutes: 120
+  time_window:
+    start: 08:00
+    end: '20:00'
+# ── Environment (IAQ thresholds; sources in config/rulebook/rulebook.md) ─────────────────────────
+# env_threshold binds by metric, so each rule covers every matching sensor in the
+# house (Apollo AIR-1, Aqara weather, …). The alert fires after the reading has held
+# past the threshold for duration_minutes. Temperatures are written in °C; °F sensors
+# are converted.
+- id: env-heat
+  name: Indoor heat — danger
+  enabled: true
+  category: Environment
+  severity: HIGH
+  trigger_type: env_threshold
+  message: '{{zone}} is {{value}} — above 31 °C, a heat risk for older adults. Cool the home.'
+  metric: temperature
+  operator: gt
+  value: 31
+  unit: °C
+  duration_minutes: 5
+  cooldown_minutes: 60
+- id: env-warm
+  name: Indoor too warm
+  enabled: true
+  category: Environment
+  severity: LOW
+  trigger_type: env_threshold
+  message: '{{zone}} is {{value}} — above the 26 °C limit for adults 60+.'
+  metric: temperature
+  operator: gt
+  value: 26
+  unit: °C
+  duration_minutes: 15
+  cooldown_minutes: 120
+- id: env-cold
+  name: Indoor cold — danger
+  enabled: true
+  category: Environment
+  severity: HIGH
+  trigger_type: env_threshold
+  message: '{{zone}} is {{value}} — at or below 18 °C, a cold risk. Warm the home.'
+  metric: temperature
+  operator: lte
+  value: 18
+  unit: °C
+  duration_minutes: 5
+  cooldown_minutes: 60
+- id: env-cool
+  name: Indoor too cool
+  enabled: true
+  category: Environment
+  severity: LOW
+  trigger_type: env_threshold
+  message: '{{zone}} is {{value}} — below the 20 °C comfort range.'
+  metric: temperature
+  operator: lt
+  value: 20
+  unit: °C
+  duration_minutes: 15
+  cooldown_minutes: 120
+- id: env-humid
+  name: High humidity
+  enabled: true
+  category: Environment
+  severity: MEDIUM
+  trigger_type: env_threshold
+  message: 'Humidity in {{zone}} is {{value}} — above 60 %, mold risk.'
+  metric: humidity
+  operator: gt
+  value: 60
+  duration_minutes: 5
+  cooldown_minutes: 60
+- id: env-co2
+  name: High CO₂
+  enabled: true
+  category: Environment
+  severity: MEDIUM
+  trigger_type: env_threshold
+  message: 'CO₂ in {{zone}} is {{value}} — above 1000 ppm. Ventilate the room.'
+  metric: co2
+  operator: gt
+  value: 1000
+  duration_minutes: 5
+  cooldown_minutes: 60
+- id: env-pm25
+  name: High PM2.5
+  enabled: true
+  category: Environment
+  severity: MEDIUM
+  trigger_type: env_threshold
+  message: 'PM2.5 in {{zone}} is {{value}} — above 35 µg/m³.'
+  metric: pm25
+  operator: gt
+  value: 35
+  duration_minutes: 5
+  cooldown_minutes: 60
+- id: env-co
+  name: Carbon monoxide
+  enabled: true
+  category: Safety
+  severity: CRITICAL
+  trigger_type: env_threshold
+  message: 'Carbon monoxide in {{zone}} is {{value}} — above 70 ppm. Get {{patient_name}} to fresh air.'
+  metric: co
+  operator: gt
+  value: 70
+  duration_minutes: 1
+  cooldown_minutes: 15
+- id: env-voc
+  name: Very abnormal VOC
+  enabled: true
+  category: Environment
+  severity: MEDIUM
+  trigger_type: env_threshold
+  message: 'VOC index in {{zone}} is {{value}} — at or above 250, very abnormal.'
+  metric: voc
+  operator: gte
+  value: 250
+  duration_minutes: 5
+  cooldown_minutes: 60
+# ── Health (Minder criteria — Pixel Watch reports heart rate only) ───────────────
+# vital_threshold never fires on a stale reading or with the watch off the wrist, and
+# ignores a high rate while the person is moving (watch/phone activity, recent steps).
+- id: vital-hr-high
+  name: High heart rate at rest
+  enabled: true
+  category: Health
+  severity: MEDIUM
+  trigger_type: vital_threshold
+  message: '{{patient_name}}''s heart rate has been above 99 bpm at rest for {{duration}} min (now {{value}}).'
+  metric: heart_rate
+  operator: gt
+  value: 99
+  duration_minutes: 10
+  cooldown_minutes: 60
+- id: vital-hr-low
+  name: Low heart rate
+  enabled: true
+  category: Health
+  severity: MEDIUM
+  trigger_type: vital_threshold
+  message: '{{patient_name}}''s heart rate has been below 55 bpm for {{duration}} min (now {{value}}).'
+  metric: heart_rate
+  operator: lt
+  value: 55
+  duration_minutes: 10
+  cooldown_minutes: 60
+  # Daytime only: resting heart rate in sleep often dips below 55 in older adults, and
+  # Minder's thresholds came from daytime spot measurements.
+  time_window:
+    start: 08:00
+    end: '21:00'
+# Push alerts to the caregiver's phone through the HA Companion App.
+# See src/dari/rule_engine/notifier.py.
+#
+# Off by default. Set `enabled: true` once the notify service name(s) below match the
+# caregiver's phone (HA → Developer Tools → Actions → search "notify.mobile_app").
+# `eval_fall` fails closed, so enabling push won't send false fall alarms when HA has
+# no fall-capable entity.
+notify:
+  enabled: false
+  min_severity: HIGH        # CRITICAL | HIGH | MEDIUM | LOW
+  services:
+    - notify.mobile_app_caregiver_phone
+
+watch:
+  heart_rate: sensor.smartwatch_heart_rate
+  steps_today: sensor.smartwatch_daily_steps
+  battery_level: sensor.smartwatch_battery_level
+  battery_state: sensor.smartwatch_battery_state
+  on_body: binary_sensor.smartwatch_on_body_sensor
+  activity_state: sensor.smartwatch_activity_state
+  calories: sensor.smartwatch_daily_calories
+  distance: sensor.smartwatch_daily_distance
+  phone_activity: sensor.caregiver_phone_detected_activity
+  sleep_confidence: sensor.caregiver_phone_sleep_confidence
+
+# Smart-plug appliances (activity engine: "Appliance on/off" timeline events, and
+# "Cooking" when a cooking appliance runs while someone is in the kitchen). Every
+# plug power sensor is tracked automatically under its HA name; list one here only
+# to rename it, set its kind (microwave | kettle | stove | toaster | coffee | …),
+# fix its area, or tune the wattage thresholds (defaults: on >= 25 W, off <= 8 W).
+# appliances:
+#   sensor.<kitchen_plug>_power:
+#     name: Microwave
+#     kind: microwave
+#     area: Kitchen
+#     on_watts: 25

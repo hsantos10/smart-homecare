@@ -1,0 +1,27 @@
+# Force the Smartwatch Companion app to push all sensor readings to HA
+# every 30 seconds. The "command_update_sensors" message wakes the Companion
+# app on the watch and triggers an immediate sensor upload without requiring
+# any third-party apps.
+#
+# How to import:
+#   HA → Settings → Automations → + New Automation → (⋮) Edit as YAML → paste this
+#
+# Verify the notify service name first:
+#   HA → Developer Tools → Services → search "notify.mobile_app_pixel"
+#   Both the phone (caregiver_phone) and watch entries should appear.
+
+alias: "DARI — Force Pixel Watch sensor refresh"
+description: >
+  Sends a silent command_update_sensors push to the Smartwatch every 30 s
+  so the activity engine always has fresh heart rate, on-body, and step data.
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: time_pattern
+    seconds: "/30"
+
+action:
+  - service: notify.mobile_app_smartwatch
+    data:
+      message: "command_update_sensors"

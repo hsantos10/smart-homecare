@@ -1,0 +1,208 @@
+# Suggested Rule Templates — DARI Smart Homecare
+# These serve as the rule book defaults. Copy any rule into a patient profile and adjust parameters.
+# Zone names must match your Home Assistant area names.
+
+templates:
+
+  # ── SAFETY ──────────────────────────────────────────────────────────────────
+
+  - id: tmpl-s01
+    name: Fall detected (any room)
+    category: Safety
+    severity: CRITICAL
+    trigger_type: fall
+    zone: null
+    message: 'Fall detected in {{zone}} at {{time}}'
+    description: >
+      Fires immediately when any FP2 ceiling sensor reports a fall event.
+      This is the highest-priority alert — always keep enabled.
+
+  - id: tmpl-s02
+    name: Night exit — front door
+    category: Safety
+    severity: HIGH
+    trigger_type: door_opened
+    no_return_minutes: 5
+    time_window: {start: '20:00', end: '08:00'}
+    message: 'Front door opened at {{time}} — {{patient_name}} may have left'
+    description: >
+      Fires when the front door opens at night and the patient doesn't return within 5 minutes.
+      Critical for elopement prevention. Reduce no_return_minutes for higher-risk patients.
+
+  - id: tmpl-s03
+    name: Daytime exit — no return
+    category: Safety
+    severity: MEDIUM
+    trigger_type: door_opened
+    no_return_minutes: 20
+    time_window: {start: '08:00', end: '20:00'}
+    message: 'Front door opened at {{time}} — {{patient_name}} has been outside for {{duration}} min'
+    description: >
+      Daytime version of the exit alert with a longer grace period (20 min).
+      Adjust no_return_minutes to match the patient's typical routine (e.g., mailbox, garden).
+
+  - id: tmpl-s04
+    name: Long bathroom stay
+    category: Safety
+    severity: HIGH
+    trigger_type: long_stay
+    zone: Bedroom Bathroom
+    duration_minutes: 20
+    message: '{{patient_name}} has been in the bathroom for {{duration}} min'
+    description: >
+      Fires if the patient stays in the bathroom beyond 20 minutes.
+      Bathrooms are high fall-risk zones — early check-in can prevent injury.
+
+  - id: tmpl-s05
+    name: Night wandering
+    category: Safety
+    severity: MEDIUM
+    trigger_type: night_wandering
+    time_window: {start: '00:00', end: '06:00'}
+    message: 'Movement detected at {{time}} in {{zone}} — possible night wandering'
+    description: >
+      Fires when any presence sensor detects movement during night hours.
+      Common in dementia — wandering at night carries fall and exit risk.
+
+  - id: tmpl-s06
+    name: No presence detected (extended)
+    category: Safety
+    severity: MEDIUM
+    trigger_type: global_inactivity
+    duration_minutes: 180
+    time_window: {start: '08:00', end: '20:00'}
+    message: 'No movement detected anywhere for {{duration}} min — check on {{patient_name}}'
+    description: >
+      Fires when no sensor detects any movement for 3 hours during daytime.
+      May indicate a fall in an uncovered area, or the patient is asleep in a chair.
+
+  # ── ACTIVITY ─────────────────────────────────────────────────────────────────
+
+  - id: tmpl-a01
+    name: Kitchen/Living room inactivity (breakfast window)
+    category: Activity
+    severity: MEDIUM
+    trigger_type: room_inactivity
+    zone: Living room
+    duration_minutes: 60
+    time_window: {start: '07:00', end: '11:00'}
+    message: 'No activity in living room/kitchen for {{duration}} min — {{patient_name}} may have missed breakfast'
+    description: >
+      Fires if the kitchen/living area shows no activity during the morning window.
+      Skipping breakfast is common in dementia and can indicate health decline.
+
+  - id: tmpl-a02
+    name: Bedroom still occupied mid-morning
+    category: Activity
+    severity: LOW
+    trigger_type: long_stay
+    zone: Bedroom
+    duration_minutes: 30
+    time_window: {start: '10:00', end: '13:00'}
+    message: '{{patient_name}} is still in the bedroom at {{time}} — possible oversleeping or fatigue'
+    description: >
+      Fires if the patient is still in the bedroom after 10am for more than 30 minutes.
+      May indicate mood changes, medication side effects, or illness.
+
+  - id: tmpl-a03
+    name: Global inactivity (daytime)
+    category: Activity
+    severity: MEDIUM
+    trigger_type: global_inactivity
+    duration_minutes: 120
+    time_window: {start: '09:00', end: '18:00'}
+    message: 'No movement anywhere for {{duration}} min during active hours'
+    description: >
+      Fires when there is no zone activity anywhere in the home for 2 hours during
+      expected waking hours. May indicate the patient is asleep in a non-sensor area.
+
+  - id: tmpl-a04
+    name: Woke up very early
+    category: Activity
+    severity: LOW
+    trigger_type: night_wandering
+    time_window: {start: '04:00', end: '06:00'}
+    message: '{{patient_name}} is up very early ({{time}}) — may be confused about time of day'
+    description: >
+      A softer version of night wandering that catches early morning wake-ups
+      (4–6am) which are common in dementia and can precede agitated episodes.
+
+  - id: tmpl-a05
+    name: Long living room stay (possible TV all day)
+    category: Activity
+    severity: LOW
+    trigger_type: long_stay
+    zone: Living room
+    duration_minutes: 240
+    time_window: {start: '09:00', end: '20:00'}
+    message: '{{patient_name}} has been in the living room for {{duration}} min without a break'
+    description: >
+      Fires if the patient is sedentary in the living room for 4+ hours.
+      Prolonged inactivity can indicate depression or physical discomfort.
+
+  # ── ENVIRONMENT ───────────────────────────────────────────────────────────────
+
+  - id: tmpl-e01
+    name: Temperature too low
+    category: Environment
+    severity: MEDIUM
+    trigger_type: sensor_threshold
+    operator: lt
+    value: 65.0
+    message: 'Temperature is {{value}}°F at {{time}} — too cold for comfort'
+    description: >
+      Fires when indoor temperature drops below 65°F (18°C).
+      Elderly and PLWD are at higher risk of hypothermia and are less likely
+      to notice or respond to cold.
+
+  - id: tmpl-e02
+    name: Temperature too high
+    category: Environment
+    severity: MEDIUM
+    trigger_type: sensor_threshold
+    operator: gt
+    value: 82.0
+    message: 'Temperature is high at {{time}} — check ventilation'
+    description: >
+      Fires when indoor temperature exceeds 82°F (28°C).
+      Heat stress in PLWD can cause confusion, agitation, and dehydration.
+
+  - id: tmpl-e03
+    name: High CO₂ level
+    category: Environment
+    severity: MEDIUM
+    trigger_type: sensor_threshold
+    operator: gt
+    value: 1000.0
+    message: 'CO₂ is elevated at {{time}} — open a window or turn on ventilation'
+    description: >
+      Fires when CO₂ exceeds 1000 ppm. Requires a CO₂ sensor (not yet installed).
+      High CO₂ impairs cognitive function and worsens dementia symptoms.
+
+  - id: tmpl-e04
+    name: Low humidity
+    category: Environment
+    severity: LOW
+    trigger_type: sensor_threshold
+    operator: lt
+    value: 30.0
+    message: 'Humidity is low at {{time}} — consider a humidifier'
+    description: >
+      Fires when relative humidity drops below 30%.
+      Dry air increases respiratory irritation and skin discomfort,
+      particularly for older adults.
+
+  - id: tmpl-e05
+    name: Appliance left on
+    category: Safety
+    severity: HIGH
+    trigger_type: sensor_threshold
+    entity_id: sensor.<kitchen_plug>_power
+    operator: gt
+    value: 50.0
+    duration_minutes: 30
+    cooldown_minutes: 60
+    message: '{{sensor}} has been drawing power for {{duration}} min ({{value}}) — check the kitchen'
+    description: >
+      Fires when a smart plug keeps drawing more than 50 W for 30 minutes — a stove,
+      kettle or microwave left running. Set entity_id to the plug's power sensor.

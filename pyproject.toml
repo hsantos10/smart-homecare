@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dari"
+version = "0.2.0"
+description = "DARI Smart Homecare Digital Twin — activity inference, alert rules and REST API"
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "websockets",
+    "python-dotenv",
+    "PyYAML",
+    "fastapi",
+    "uvicorn",
+    "pandas",
+]
+
+[project.optional-dependencies]
+# Notebook / analysis extras — not needed to run the engines.
+analysis = ["jupyterlab", "matplotlib", "nbformat", "nest-asyncio"]
+admin = ["streamlit"]
+
+[project.scripts]
+dari-activity-engine = "dari.activity_engine.engine:main"
+dari-rule-engine = "dari.rule_engine.engine:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

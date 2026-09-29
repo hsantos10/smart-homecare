@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The DARI API is served over plain HTTP on the tailnet (http://<tailscale-ip>:8000) and
+  does not terminate TLS. Android 9+ blocks cleartext by default, so without this the
+  packaged app can reach nothing but HTTPS and every screen falls back to demo data.
+
+  Cleartext is permitted broadly because the server address is configurable at runtime
+  (see ServerSettings.tsx) — pinning a single tailnet IP here would break the moment it
+  changes. The app only ever talks to the DARI API, and only over the private tailnet.
+
+  When the API terminates TLS, flip cleartextTrafficPermitted to false and delete the
+  android:networkSecurityConfig attribute from AndroidManifest.xml.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
